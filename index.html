@@ -877,13 +877,48 @@ function App() {
     setConfig(newConfig); saveStorage(STORAGE_KEYS.config, newConfig);
   }, []);
 
-  const exportarJSON = () => {
-    const data = { cierres, config, exportado: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const exportarExcel = () => {
+    const fecha = new Date().toISOString().split("T")[0];
+
+    // Encabezados
+    const cols = [
+      "Fecha", "Bidón 20L", "Bidón 12L", "Cajón Soda", "Crédito",
+      "Total Vendido", "Pago Fábrica", "Descuento Crédito", "Gasto Nafta", "Ganancia Final", "No trabajó"
+    ];
+
+    const filas = [...cierres]
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+      .map(c => [
+        c.fecha,
+        c.cantidades?.bidon20  ?? 0,
+        c.cantidades?.bidon12  ?? 0,
+        c.cantidades?.cajon    ?? 0,
+        c.credito              ?? 0,
+        c.totalVendido         ?? 0,
+        c.pagoFabrica          ?? 0,
+        c.descuentoCredito     ?? 0,
+        c.gastoNafta           ?? 0,
+        c.gananciaFinal        ?? 0,
+        c.noTrabajo ? "Sí" : "No",
+      ]);
+
+    // Construir CSV con separador ; (compatible con Excel en español)
+    const csvRows = [cols, ...filas].map(row =>
+      row.map(v => {
+        const s = String(v ?? "");
+        // Si tiene coma o punto y coma, envolver en comillas
+        return s.includes(";") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(";")
+    );
+
+    // BOM para que Excel abra con tildes correctas
+    const bom  = "\uFEFF";
+    const csv  = bom + csvRows.join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `agua-reparto-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `agua-reparto-${fecha}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -898,10 +933,10 @@ function App() {
             <h1 className="text-xl font-extrabold tracking-tight">💧 Agua Reparto</h1>
             <p className="text-blue-200 text-xs">Gestión de cierres diarios</p>
           </div>
-          <button onClick={exportarJSON}
-            title="Exportar backup"
+          <button onClick={exportarExcel}
+            title="Exportar a Excel"
             className="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-400 active:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
-            <span>⬇️</span> Backup
+            <span>📥</span> Excel
           </button>
         </div>
       </header>
