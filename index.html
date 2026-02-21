@@ -11,7 +11,7 @@
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel">
+  <script type="text/babel" data-presets="react">
     const { useState, useCallback } = React;
 
 
@@ -557,7 +557,7 @@ function TabConfig({ config, onSave }) {
 }
 
 // ─── App principal ───────────────────────────────────────────────────────────────
-export default function App() {
+function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [config,   setConfig]     = useState(() => loadStorage(STORAGE_KEYS.config, DEFAULT_CONFIG));
   const [cierres,  setCierres]    = useState(() => loadStorage(STORAGE_KEYS.cierres, []));
