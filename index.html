@@ -914,14 +914,11 @@ function TabExportar({ cierres }) {
   const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
   const fmtNum = (v) => String(r2(v)).replace(".", ",");
 
-  const handleExportar = () => {
-    if (del_mes.length === 0) return;
-
+  const generarYDescargarCSV = () => {
     const cols = [
       "Fecha", "Bidón 20L", "Bidón 12L", "Cajón Soda", "Crédito",
       "Total Vendido", "Pago Fábrica", "Descuento Crédito", "Gasto Nafta", "Ganancia Final"
     ];
-
     const filas = [...del_mes]
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
       .map(c => [
@@ -936,31 +933,21 @@ function TabExportar({ cierres }) {
         fmtNum(c.gastoNafta),
         fmtNum(c.gananciaFinal),
       ]);
-
     const csvRows = [cols, ...filas];
-
-    // Fila vacía + totales con DGI/BPS
-    const imp       = loadStorage(`aguaImpuestos_${anio}_${mes}`, { dgi: 0, bps: 0 });
-    const dgiVal    = Number(imp.dgi || 0);
-    const bpsVal    = Number(imp.bps || 0);
-    const bruto     = del_mes.reduce((s, c) => s + (c.gananciaFinal || 0), 0);
-    const neto      = bruto - dgiVal - bpsVal;
-
-    csvRows.push([""]); // fila vacía
+    const imp    = loadStorage(`aguaImpuestos_${anio}_${mes}`, { dgi: 0, bps: 0 });
+    const dgiVal = Number(imp.dgi || 0);
+    const bpsVal = Number(imp.bps || 0);
+    const bruto  = del_mes.reduce((s, c) => s + (c.gananciaFinal || 0), 0);
+    const neto   = bruto - dgiVal - bpsVal;
+    csvRows.push([""]);
     csvRows.push(["Ganancia bruta", "", "", "", "", "", "", "", "", fmtNum(bruto)]);
     if (dgiVal > 0) csvRows.push(["DGI", "", "", "", "", "", "", "", "", fmtNum(-dgiVal)]);
     if (bpsVal > 0) csvRows.push(["BPS", "", "", "", "", "", "", "", "", fmtNum(-bpsVal)]);
     csvRows.push(["Ganancia final", "", "", "", "", "", "", "", "", fmtNum(neto)]);
-
     const csvText = csvRows.map(row =>
-      row.map(v => {
-        const s = String(v ?? "");
-        return s.includes(";") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
-      }).join(";")
+      row.map(v => { const s = String(v ?? ""); return s.includes(";") ? `"${s}"` : s; }).join(";")
     );
-
-    const bom  = "\uFEFF";
-    const csv  = bom + csvText.join("\r\n");
+    const csv  = "\uFEFF" + csvText.join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
@@ -968,11 +955,47 @@ function TabExportar({ cierres }) {
     a.download = `agua-reparto-${meses[Number(mes)-1].toLowerCase()}-${anio}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    return { bruto, neto, dgiVal, bpsVal };
+  };
 
+  const handleExportar = () => {
+    if (del_mes.length === 0) return;
+    generarYDescargarCSV();
     setExportado(true);
     setTimeout(() => setExportado(false), 3000);
   };
 
+  const [wspEnviado, setWspEnviado] = useState(false);
+
+  const handleExportarYWhatsApp = () => {
+    if (del_mes.length === 0) return;
+    generarYDescargarCSV();
+    setWspEnviado(true);
+    setTimeout(() => {
+      window.open("https://wa.me/", "_blank");
+      setWspEnviado(false);
+    }, 900);
+  };
+
+  const handleCompartirTexto = () => {
+    if (del_mes.length === 0) return;
+    const { bruto, neto, dgiVal, bpsVal } = generarYDescargarCSV();
+    const diasTrabajados = del_mes.filter(c => !c.noTrabajo).length;
+    const totalVendido   = del_mes.reduce((s, c) => s + (c.totalVendido || 0), 0);
+    const totalNafta     = del_mes.reduce((s, c) => s + (c.gastoNafta   || 0), 0);
+    let texto = `🚰 *Resumen ${meses[Number(mes)-1]} ${anio}*\n`;
+    texto += `━━━━━━━━━━━━━━━━━━\n`;
+    texto += `📅 Días trabajados: ${diasTrabajados}\n`;
+    texto += `💰 Total vendido: $${fmt(totalVendido)}\n`;
+    texto += `⛽ Gasto nafta: $${fmt(totalNafta)}\n`;
+    texto += `━━━━━━━━━━━━━━━━━━\n`;
+    texto += `📊 Ganancia bruta: $${fmt(bruto)}\n`;
+    if (dgiVal > 0) texto += `🏛️ DGI: -$${fmt(dgiVal)}\n`;
+    if (bpsVal > 0) texto += `🏛️ BPS: -$${fmt(bpsVal)}\n`;
+    texto += `✅ *Ganancia final: $${fmt(neto)}*`;
+    const encoded = encodeURIComponent(texto);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+  };
   // Calcular totales del mes para preview
   const totales = del_mes.reduce((acc, c) => ({
     vendido:  acc.vendido  + (c.totalVendido  || 0),
@@ -1025,19 +1048,55 @@ function TabExportar({ cierres }) {
         )}
       </Card>
 
-      {/* Botón exportar */}
-      <button
-        onClick={handleExportar}
-        disabled={del_mes.length === 0}
-        className={`w-full font-bold py-4 rounded-2xl text-base transition-all ${
-          exportado
-            ? "bg-emerald-500 text-white"
-            : del_mes.length === 0
-            ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white"
-        }`}>
-        {exportado ? "Descargado" : `Exportar ${meses[Number(mes)-1]} ${anio}`}
-      </button>
+      {/* Botones de exportar */}
+      <div className="space-y-3">
+        {/* Botón exportar normal */}
+        <button
+          onClick={handleExportar}
+          disabled={del_mes.length === 0}
+          className={`w-full font-bold py-4 rounded-2xl text-base transition-all ${
+            exportado
+              ? "bg-emerald-500 text-white"
+              : del_mes.length === 0
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white"
+          }`}>
+          {exportado ? "✅ Descargado" : "📥 Descargar"}
+        </button>
+
+        {/* Botón descargar + abrir WhatsApp */}
+        <button
+          onClick={handleExportarYWhatsApp}
+          disabled={del_mes.length === 0}
+          className={`w-full font-bold py-4 rounded-2xl text-base transition-all flex items-center justify-center gap-2 ${
+            wspEnviado
+              ? "bg-emerald-500 text-white"
+              : del_mes.length === 0
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+              : "bg-green-500 hover:bg-green-600 active:bg-green-700 text-white"
+          }`}>
+          {wspEnviado ? "✅ Descargando y abriendo..." : "📲 Descargar y enviar por WhatsApp"}
+        </button>
+
+        {/* Botón compartir resumen como texto */}
+        <button
+          onClick={handleCompartirTexto}
+          disabled={del_mes.length === 0}
+          className={`w-full font-bold py-4 rounded-2xl text-base transition-all ${
+            del_mes.length === 0
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+              : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white"
+          }`}>
+          💬 Compartir resumen por WhatsApp
+        </button>
+
+        {del_mes.length > 0 && (
+          <p className="text-xs text-slate-400 text-center px-2">
+            💬 <span className="font-medium">Compartir resumen</span> envía un texto directo sin archivos.{" "}
+            📲 <span className="font-medium">Descargar y enviar</span> baja el CSV y abre WhatsApp para adjuntarlo.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
