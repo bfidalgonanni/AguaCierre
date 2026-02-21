@@ -45,7 +45,7 @@ const DEFAULT_CONFIG = {
   gastoNafta: 500,
 };
 
-const TABS = ["Cierre", "Historial", "Resumen", "Reportes", "Config"];
+const TABS = ["Cierre", "Historial", "Resumen", "Reportes", "Exportar", "Config"];
 const STORAGE_KEYS = { config: "aguaConfig", cierres: "aguaCierres" };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -898,6 +898,135 @@ function TabConfig({ config, onSave }) {
   );
 }
 
+// ─── Tab: Exportar ───────────────────────────────────────────────────────────────
+function TabExportar({ cierres }) {
+  const now   = new Date();
+  const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                 "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const [mes,  setMes]  = useState(String(now.getMonth() + 1).padStart(2, "0"));
+  const [anio, setAnio] = useState(String(now.getFullYear()));
+  const [exportado, setExportado] = useState(false);
+
+  const prefix  = `${anio}-${mes}`;
+  const del_mes = cierres.filter(c => c.fecha.startsWith(prefix));
+
+  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+  const fmtNum = (v) => String(r2(v)).replace(".", ",");
+
+  const handleExportar = () => {
+    if (del_mes.length === 0) return;
+
+    const cols = [
+      "Fecha", "Bidón 20L", "Bidón 12L", "Cajón Soda", "Crédito",
+      "Total Vendido", "Pago Fábrica", "Descuento Crédito", "Gasto Nafta", "Ganancia Final", "No trabajó"
+    ];
+
+    const filas = [...del_mes]
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+      .map(c => [
+        c.fecha,
+        c.cantidades?.bidon20  ?? 0,
+        c.cantidades?.bidon12  ?? 0,
+        c.cantidades?.cajon    ?? 0,
+        c.credito              ?? 0,
+        fmtNum(c.totalVendido),
+        fmtNum(c.pagoFabrica),
+        fmtNum(c.descuentoCredito),
+        fmtNum(c.gastoNafta),
+        fmtNum(c.gananciaFinal),
+        c.noTrabajo ? "Sí" : "No",
+      ]);
+
+    const csvRows = [cols, ...filas].map(row =>
+      row.map(v => {
+        const s = String(v ?? "");
+        return s.includes(";") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(";")
+    );
+
+    const bom  = "\uFEFF";
+    const csv  = bom + csvRows.join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `agua-reparto-${meses[Number(mes)-1].toLowerCase()}-${anio}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    setExportado(true);
+    setTimeout(() => setExportado(false), 3000);
+  };
+
+  // Calcular totales del mes para preview
+  const totales = del_mes.reduce((acc, c) => ({
+    vendido:  acc.vendido  + (c.totalVendido  || 0),
+    ganancia: acc.ganancia + (c.gananciaFinal || 0),
+  }), { vendido: 0, ganancia: 0 });
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-bold text-slate-800">📥 Exportar a Excel</h2>
+
+      {/* Selector mes/año */}
+      <Card className="p-4">
+        <p className="text-sm text-slate-500 mb-3">Seleccioná el mes que querés exportar</p>
+        <div className="flex gap-3">
+          <select value={mes} onChange={e => { setMes(e.target.value); setExportado(false); }}
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-400">
+            {meses.map((m, i) => <option key={i} value={String(i+1).padStart(2,"0")}>{m}</option>)}
+          </select>
+          <select value={anio} onChange={e => { setAnio(e.target.value); setExportado(false); }}
+            className="w-28 border border-slate-200 rounded-xl px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-400">
+            {[2024,2025,2026,2027].map(y => <option key={y}>{y}</option>)}
+          </select>
+        </div>
+      </Card>
+
+      {/* Preview del mes */}
+      <Card className="p-4">
+        {del_mes.length === 0 ? (
+          <div className="text-center py-4 text-slate-400 text-sm">
+            No hay cierres para {meses[Number(mes)-1]} {anio}.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-500">Cierres registrados</span>
+              <span className="font-bold text-slate-800 text-lg">{del_mes.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-500">Total vendido</span>
+              <span className="font-semibold text-slate-700">{fmt(totales.vendido)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-500">Ganancia del mes</span>
+              <span className={`font-bold ${totales.ganancia >= 0 ? "text-emerald-600" : "text-red-500"}`}>{fmt(totales.ganancia)}</span>
+            </div>
+            <div className="pt-1 border-t border-slate-100 text-xs text-slate-400">
+              Archivo: <span className="font-medium text-slate-500">agua-reparto-{meses[Number(mes)-1].toLowerCase()}-{anio}.csv</span>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Botón exportar */}
+      <button
+        onClick={handleExportar}
+        disabled={del_mes.length === 0}
+        className={`w-full font-bold py-4 rounded-2xl text-base transition-all ${
+          exportado
+            ? "bg-emerald-500 text-white"
+            : del_mes.length === 0
+            ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white"
+        }`}>
+        {exportado ? "Descargado" : `Exportar ${meses[Number(mes)-1]} ${anio}`}
+      </button>
+    </div>
+  );
+}
+
 // ─── App principal ───────────────────────────────────────────────────────────────
 function App() {
   const [activeTab, setActiveTab] = useState(0);
@@ -925,6 +1054,8 @@ function App() {
       "Total Vendido", "Pago Fábrica", "Descuento Crédito", "Gasto Nafta", "Ganancia Final", "No trabajó"
     ];
 
+    const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+
     const filas = [...cierres]
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
       .map(c => [
@@ -933,19 +1064,22 @@ function App() {
         c.cantidades?.bidon12  ?? 0,
         c.cantidades?.cajon    ?? 0,
         c.credito              ?? 0,
-        c.totalVendido         ?? 0,
-        c.pagoFabrica          ?? 0,
-        c.descuentoCredito     ?? 0,
-        c.gastoNafta           ?? 0,
-        c.gananciaFinal        ?? 0,
+        r2(c.totalVendido),
+        r2(c.pagoFabrica),
+        r2(c.descuentoCredito),
+        r2(c.gastoNafta),
+        r2(c.gananciaFinal),
         c.noTrabajo ? "Sí" : "No",
       ]);
 
-    // Construir CSV con separador ; (compatible con Excel en español)
+    // Construir CSV con separador ; y coma decimal (compatible con Excel en español)
     const csvRows = [cols, ...filas].map(row =>
-      row.map(v => {
+      row.map((v, i) => {
+        // Columnas numéricas con decimales: reemplazar punto por coma
+        if (i >= 5 && i <= 9 && typeof v === "number") {
+          return String(v).replace(".", ",");
+        }
         const s = String(v ?? "");
-        // Si tiene coma o punto y coma, envolver en comillas
         return s.includes(";") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
       }).join(";")
     );
@@ -962,7 +1096,7 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  const tabIcons = ["📋", "📅", "📈", "📊", "⚙️"];
+  const tabIcons = ["📋", "📅", "📈", "📊", "📥", "⚙️"];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -972,11 +1106,6 @@ function App() {
             <h1 className="text-xl font-extrabold tracking-tight">💧 Agua Reparto</h1>
             <p className="text-blue-200 text-xs">Gestión de cierres diarios</p>
           </div>
-          <button onClick={exportarExcel}
-            title="Exportar a Excel"
-            className="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-400 active:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
-            <span>📥</span> Excel
-          </button>
         </div>
       </header>
 
@@ -999,7 +1128,8 @@ function App() {
         {activeTab === 1 && <TabHistorial cierres={cierres} config={config} onDelete={deleteCierre} />}
         {activeTab === 2 && <TabResumen   cierres={cierres} />}
         {activeTab === 3 && <TabReportes  cierres={cierres} />}
-        {activeTab === 4 && <TabConfig    config={config} onSave={saveConfig} />}
+        {activeTab === 4 && <TabExportar  cierres={cierres} />}
+        {activeTab === 5 && <TabConfig    config={config} onSave={saveConfig} />}
       </main>
     </div>
   );
