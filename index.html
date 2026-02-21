@@ -608,14 +608,15 @@ function ReporteAnual({ cierres }) {
                  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const [anio, setAnio] = useState(String(now.getFullYear()));
 
-  // Todos los meses del año seleccionado
+  // Todos los meses del año seleccionado, descontando DGI+BPS guardados
   const datosAnuales = meses.map((nombre, i) => {
     const m   = String(i + 1).padStart(2, "0");
     const pfx = `${anio}-${m}`;
     const gan = cierres
       .filter(c => c.fecha.startsWith(pfx) && !c.noTrabajo)
       .reduce((s, c) => s + (c.gananciaFinal || 0), 0);
-    return { label: nombre.slice(0, 3), valor: gan };
+    const imp = loadStorage(`aguaImpuestos_${anio}_${m}`, { dgi: 0, bps: 0 });
+    return { label: nombre.slice(0, 3), valor: gan - (imp.dgi || 0) - (imp.bps || 0) };
   });
 
   const totalAnio  = datosAnuales.reduce((s, d) => s + d.valor, 0);
@@ -711,7 +712,10 @@ function ReporteMensual({ cierres }) {
   }));
 
   const totalMes  = del_mes.reduce((s, c) => s + (c.gananciaFinal || 0), 0);
-  const promDia   = del_mes.length ? totalMes / del_mes.length : 0;
+  const imp       = loadStorage(`aguaImpuestos_${anio}_${mes}`, { dgi: 0, bps: 0 });
+  const totalImp  = (imp.dgi || 0) + (imp.bps || 0);
+  const totalNeto = totalMes - totalImp;
+  const promDia   = del_mes.length ? totalNeto / del_mes.length : 0;
   const mejorDia  = del_mes.length ? Math.max(...del_mes.map(c => c.gananciaFinal || 0)) : 0;
 
   return (
@@ -780,9 +784,19 @@ function ReporteMensual({ cierres }) {
                 </div>
               ))}
               <div className="flex justify-between items-center pt-2 border-t border-slate-200 px-1">
-                <span className="font-bold text-slate-800">Total {meses[Number(mes)-1]}</span>
-                <span className={`font-extrabold text-lg tabular-nums ${totalMes >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                  {fmt(totalMes)}
+                <span className="font-bold text-slate-800">Ganancia bruta</span>
+                <span className="font-semibold text-slate-600 tabular-nums">{fmt(totalMes)}</span>
+              </div>
+              {totalImp > 0 && (
+                <div className="flex justify-between items-center px-1 text-sm">
+                  <span className="text-slate-500">DGI + BPS</span>
+                  <span className="text-red-400 tabular-nums">- {fmt(totalImp)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center px-1 pt-1 border-t border-slate-300">
+                <span className="font-extrabold text-slate-800">Ganancia final</span>
+                <span className={`font-extrabold text-xl tabular-nums ${totalNeto >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                  {fmt(totalNeto)}
                 </span>
               </div>
             </div>
