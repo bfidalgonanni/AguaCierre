@@ -918,7 +918,7 @@ function TabExportar({ cierres }) {
 
     const cols = [
       "Fecha", "Bidón 20L", "Bidón 12L", "Cajón Soda", "Crédito",
-      "Total Vendido", "Pago Fábrica", "Descuento Crédito", "Gasto Nafta", "Ganancia Final", "No trabajó"
+      "Total Vendido", "Pago Fábrica", "Descuento Crédito", "Gasto Nafta", "Ganancia Final"
     ];
 
     const filas = [...del_mes]
@@ -934,10 +934,24 @@ function TabExportar({ cierres }) {
         fmtNum(c.descuentoCredito),
         fmtNum(c.gastoNafta),
         fmtNum(c.gananciaFinal),
-        c.noTrabajo ? "Sí" : "No",
       ]);
 
-    const csvRows = [cols, ...filas].map(row =>
+    const csvRows = [cols, ...filas];
+
+    // Fila vacía + totales con DGI/BPS
+    const imp       = loadStorage(`aguaImpuestos_${anio}_${mes}`, { dgi: 0, bps: 0 });
+    const dgiVal    = Number(imp.dgi || 0);
+    const bpsVal    = Number(imp.bps || 0);
+    const bruto     = del_mes.reduce((s, c) => s + (c.gananciaFinal || 0), 0);
+    const neto      = bruto - dgiVal - bpsVal;
+
+    csvRows.push([""]); // fila vacía
+    csvRows.push(["Ganancia bruta", "", "", "", "", "", "", "", "", fmtNum(bruto)]);
+    if (dgiVal > 0) csvRows.push(["DGI", "", "", "", "", "", "", "", "", fmtNum(-dgiVal)]);
+    if (bpsVal > 0) csvRows.push(["BPS", "", "", "", "", "", "", "", "", fmtNum(-bpsVal)]);
+    csvRows.push(["Ganancia final", "", "", "", "", "", "", "", "", fmtNum(neto)]);
+
+    const csvText = csvRows.map(row =>
       row.map(v => {
         const s = String(v ?? "");
         return s.includes(";") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
@@ -945,7 +959,7 @@ function TabExportar({ cierres }) {
     );
 
     const bom  = "\uFEFF";
-    const csv  = bom + csvRows.join("\r\n");
+    const csv  = bom + csvText.join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
