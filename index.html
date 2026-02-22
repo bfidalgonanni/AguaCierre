@@ -958,8 +958,8 @@ function TabConfig({ config, onSave }) {
       </Card>
 
       <button onClick={handleSave}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl text-base transition-colors">
-        {saved ? "✅ Guardado" : "Guardar configuración"}
+        className={`w-full text-white font-bold py-4 rounded-2xl text-base transition-colors ${saved ? "bg-emerald-500" : "bg-blue-600 hover:bg-blue-700"}`}>
+        {saved ? "Guardado" : "Guardar configuración"}
       </button>
     </div>
   );
