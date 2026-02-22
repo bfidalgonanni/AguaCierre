@@ -1111,12 +1111,12 @@ function TabExportar({ cierres }) {
           disabled={del_mes.length === 0}
           className={`w-full font-bold py-4 rounded-2xl text-base transition-all ${
             exportado
-              ? "bg-emerald-500 text-white"
+              ? "bg-blue-400 scale-95 text-white"
               : del_mes.length === 0
               ? "bg-slate-200 text-slate-400 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white"
           }`}>
-          {exportado ? "✅ Descargado" : "📥 Descargar"}
+          {exportado ? "✓ Descargado" : "📥 Descargar"}
         </button>
         <button
           onClick={handleCompartirTexto}
