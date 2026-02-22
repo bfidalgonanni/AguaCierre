@@ -8,6 +8,47 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { transition: background-color 0.2s, border-color 0.2s, color 0.15s; }
+    .dk { --tw-bg-opacity:1; }
+    /* Fondo general */
+    .dk.min-h-screen { background-color: #0f172a !important; }
+    /* Cards / paneles blancos */
+    .dk .bg-white  { background-color: #1e293b !important; }
+    .dk .bg-slate-50  { background-color: #0f172a !important; }
+    .dk .bg-slate-100 { background-color: #1e293b !important; }
+    .dk .bg-slate-200 { background-color: #334155 !important; }
+    /* Bordes */
+    .dk .border-slate-100,
+    .dk .border-slate-200 { border-color: #334155 !important; }
+    .dk .border-t         { border-color: #334155 !important; }
+    /* Textos */
+    .dk .text-slate-800 { color: #f1f5f9 !important; }
+    .dk .text-slate-700 { color: #e2e8f0 !important; }
+    .dk .text-slate-600 { color: #cbd5e1 !important; }
+    .dk .text-slate-500 { color: #94a3b8 !important; }
+    .dk .text-slate-400 { color: #64748b !important; }
+    /* Inputs y selects */
+    .dk input, .dk select, .dk textarea {
+      background-color: #1e293b !important;
+      border-color: #475569 !important;
+      color: #e2e8f0 !important;
+    }
+    .dk select option { background-color: #1e293b; color: #e2e8f0; }
+    /* Colores semánticos */
+    .dk .text-emerald-600 { color: #34d399 !important; }
+    .dk .text-red-500     { color: #f87171 !important; }
+    .dk .text-blue-600    { color: #60a5fa !important; }
+    .dk .bg-emerald-50    { background-color: #022c22 !important; }
+    .dk .bg-red-50        { background-color: #2d0a0a !important; }
+    .dk .bg-blue-50       { background-color: #0c1a2e !important; }
+    /* Sombras */
+    .dk .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.6) !important; }
+    /* Nav header oscuro */
+    .dk-nav { background-color: #1e293b !important; border-color: #334155 !important; }
+    /* Botón deshabilitado en dark */
+    .dk .cursor-not-allowed.bg-slate-200 { background-color: #1e293b !important; color: #475569 !important; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
@@ -1070,8 +1111,10 @@ function TabExportar({ cierres }) {
 // ─── App principal ───────────────────────────────────────────────────────────────
 function App() {
   const [activeTab, setActiveTab] = useState(0);
+  const [dark,      setDark]      = useState(() => loadStorage("aguaDarkMode", false));
   const [config,   setConfig]     = useState(() => loadStorage(STORAGE_KEYS.config, DEFAULT_CONFIG));
   const [cierres,  setCierres]    = useState(() => loadStorage(STORAGE_KEYS.cierres, []));
+  const toggleDark = () => setDark(p => { const n = !p; saveStorage("aguaDarkMode", n); return n; });
 
   const saveCierre = useCallback((cierre) => {
     setCierres((prev) => { const next = [...prev, cierre]; saveStorage(STORAGE_KEYS.cierres, next); return next; });
@@ -1139,22 +1182,29 @@ function App() {
   const tabIcons = ["📋", "📅", "📈", "📊", "📥", "⚙️"];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={`min-h-screen bg-slate-50${dark ? " dk" : ""}`}>
       <header className="bg-blue-600 text-white px-4 pb-3 pt-4 shadow-lg">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-extrabold tracking-tight">💧 Agua Reparto</h1>
             <p className="text-blue-200 text-xs">Gestión de cierres diarios</p>
           </div>
+          <button onClick={toggleDark}
+            className="text-xl p-2 rounded-full hover:bg-blue-500 active:bg-blue-400 transition-colors select-none"
+            title={dark ? "Modo claro" : "Modo oscuro"}>
+            {dark ? "☀️" : "🌙"}
+          </button>
         </div>
       </header>
 
-      <nav className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
+      <nav className={`bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10${dark ? " dk-nav" : ""}`}>
         <div className="max-w-lg mx-auto flex">
           {TABS.map((tab, i) => (
             <button key={tab} onClick={() => setActiveTab(i)}
               className={`flex-1 py-3 text-xs font-semibold flex flex-col items-center gap-0.5 transition-colors border-b-2 ${
-                activeTab === i ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400 hover:text-slate-600"
+                activeTab === i
+                  ? dark ? "border-blue-400 text-blue-400" : "border-blue-600 text-blue-600"
+                  : dark ? "border-transparent text-slate-500" : "border-transparent text-slate-400 hover:text-slate-600"
               }`}>
               <span className="text-base">{tabIcons[i]}</span>
               {tab}
