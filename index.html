@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Agua Reparto</title>
+  <title>Aqua Control</title>
+  <link rel="icon" type="image/png" href="logo.png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -56,14 +57,13 @@
 <body>
   <div id="root"></div>
   <script>
-   const firebaseConfig = {
-      apiKey: "AIzaSyBiI3Wo7zP2rHZZ9b061OJ6a3lilRM02vc",
+    const firebaseConfig = {
+      apiKey: "AIzaSyBiI3Wo7zP2rHZZ9b0610J6a3lilRM02vc",
       authDomain: "reparto-agua-3d2bf.firebaseapp.com",
       projectId: "reparto-agua-3d2bf",
       storageBucket: "reparto-agua-3d2bf.firebasestorage.app",
       messagingSenderId: "954623535383",
-      appId: "1:954623535383:web:6b54c07a9778295a1eaf52",
-      measurementId: "G-9VLZL1CZH5"
+      appId: "1:954623535383:web:6b54c07a9778295a1eaf52"
     };
     firebase.initializeApp(firebaseConfig);
     const db   = firebase.firestore();
@@ -230,8 +230,8 @@ function LoginScreen() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">💧</div>
-          <h1 className="text-2xl font-extrabold text-slate-800">Agua Reparto</h1>
+          <img src="logo.png" alt="Aqua Control" style={{ width: 96, height: 96, objectFit: "contain", margin: "0 auto 12px" }} />
+          <h1 className="text-2xl font-extrabold text-slate-800">Aqua Control</h1>
           <p className="text-slate-400 text-sm mt-1">Iniciá sesión para continuar</p>
         </div>
         <Card className="p-6 space-y-4">
@@ -1354,9 +1354,12 @@ function App() {
     <div className={`min-h-screen bg-slate-50${dark ? " dk" : ""}`}>
       <header className="bg-blue-600 text-white px-4 pb-3 pt-4 shadow-lg">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight">💧 Agua Reparto</h1>
-            <p className="text-blue-200 text-xs">Gestión de cierres diarios</p>
+          <div className="flex items-center gap-3">
+            <img src="logo.png" alt="logo" style={{ width: 40, height: 40, objectFit: "contain", borderRadius: "50%" }} />
+            <div>
+              <h1 className="text-xl font-extrabold tracking-tight">Aqua Control</h1>
+              <p className="text-blue-200 text-xs">Gestión de cierres diarios</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={toggleDark}
