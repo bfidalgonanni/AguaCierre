@@ -209,7 +209,18 @@ function LoginScreen() {
     try {
       await auth.signInWithEmailAndPassword(email, pass);
     } catch (e) {
-      setError("Email o contraseña incorrectos.");
+      const code = e.code || "";
+      if (code === "auth/unauthorized-domain") {
+        setError("⚠️ Dominio no autorizado. Abrí la app desde GitHub Pages (HTTPS), no desde el archivo local.");
+      } else if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        setError("Email o contraseña incorrectos.");
+      } else if (code === "auth/network-request-failed") {
+        setError("Sin conexión. Verificá tu internet.");
+      } else if (code === "auth/too-many-requests") {
+        setError("Demasiados intentos. Esperá unos minutos.");
+      } else {
+        setError("Error: " + (e.message || code));
+      }
     }
     setLoading(false);
   };
