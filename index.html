@@ -167,6 +167,7 @@ function TabCierre({ config, cierres, onSave }) {
   const [resultado,  setResultado]  = useState(null);
   const [saved,      setSaved]      = useState(false);
   const [error,      setError]      = useState("");
+  const [calcFlash,  setCalcFlash]  = useState(false);
 
   const fechaEsDomingo = esDomingo(fecha);
 
@@ -197,6 +198,7 @@ function TabCierre({ config, cierres, onSave }) {
       setError(`⚠️ El crédito (${fmt(res.descuentoCredito)}) supera el pago a fábrica (${fmt(res.pagoFabricaBase)}). El pago quedará en $0.`);
     }
     setResultado(res); setSaved(false);
+    setCalcFlash(true); setTimeout(() => setCalcFlash(false), 600);
   };
 
   const handleSave = () => {
@@ -207,6 +209,7 @@ function TabCierre({ config, cierres, onSave }) {
     }
     onSave({ fecha, cantidades: { ...cantidades }, credito: Number(credito || 0), noTrabajo, ...resultado, id: Date.now() });
     setSaved(true); setError("");
+    setCantidades({}); setCredito("");
   };
 
   return (
@@ -268,8 +271,8 @@ function TabCierre({ config, cierres, onSave }) {
         {error && <p className="mt-3 text-sm text-amber-700 bg-amber-50 rounded-xl px-3 py-2">{error}</p>}
 
         <button onClick={handleCalc} disabled={fechaEsDomingo}
-          className="w-full mt-5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-base transition-colors">
-          Calcular
+          className={`w-full mt-5 text-white font-bold py-4 rounded-2xl text-base transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed ${calcFlash ? "bg-blue-400 scale-95" : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800"}`}>
+          {calcFlash ? "✓ Calculado" : "Calcular"}
         </button>
       </Card>
 
