@@ -3,7 +3,7 @@ const ASSETS = [
   '/AguaCierre/',
   '/AguaCierre/index.html',
   '/AguaCierre/manifest.json',
-  '/AguaCierre/icon.png'
+  '/AguaCierre/icon.svg'
 ];
 
 self.addEventListener('install', event => {
