@@ -695,50 +695,50 @@ function TabResumen({ cierres }) {
           No hay cierres para {meses[Number(mes)-1]} {anio}.
         </Card>
       ) : (
-        <>
-          <Card className="p-4">
-            <div className="text-sm text-slate-500 mb-3">
-              {del_mes.length} cierre{del_mes.length > 1 ? "s" : ""} en {meses[Number(mes)-1]} {anio}
-            </div>
-            <ResultRow label="Total vendido"        value={fmt(totales.vendido)} />
-            <ResultRow label="Pago a fábrica"       value={fmt(totales.fabrica)} />
-            {totales.credito > 0 && (
-              <ResultRow label="Descuento créditos" value={`- ${fmt(totales.credito)}`} negative />
-            )}
-            <ResultRow label="Gasto nafta"           value={`- ${fmt(totales.nafta)}`} negative />
-            <ResultRow label="Ganancia antes de impuestos" value={fmt(totales.ganancia)} big />
-          </Card>
-
-          <Card className="p-4">
-            <h3 className="text-base font-bold text-slate-700 mb-3">🧾 Gastos mensuales</h3>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">DGI ($)</label>
-                <input type="number" inputMode="decimal" min="0" placeholder="0"
-                  value={dgi} onChange={(e) => handleDgi(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">BPS ($)</label>
-                <input type="number" inputMode="decimal" min="0" placeholder="0"
-                  value={bps} onChange={(e) => handleBps(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
-              </div>
-            </div>
-            {(dgiVal > 0 || bpsVal > 0) && (
-              <div className="text-xs text-slate-400 text-right mb-1">
-                Total descontado: {fmt(dgiVal + bpsVal)}
-              </div>
-            )}
-            <div className="flex justify-between items-center pt-3 border-t border-slate-200">
-              <span className="font-bold text-slate-800 text-base">Ganancia final del mes</span>
-              <span className={`font-extrabold text-2xl tabular-nums ${gananciaFinalConImpuestos >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                {fmt(gananciaFinalConImpuestos)}
-              </span>
-            </div>
-          </Card>
-        </>
+        <Card className="p-4">
+          <div className="text-sm text-slate-500 mb-3">
+            {del_mes.length} cierre{del_mes.length > 1 ? "s" : ""} en {meses[Number(mes)-1]} {anio}
+          </div>
+          <ResultRow label="Total vendido"        value={fmt(totales.vendido)} />
+          <ResultRow label="Pago a fábrica"       value={fmt(totales.fabrica)} />
+          {totales.credito > 0 && (
+            <ResultRow label="Descuento créditos" value={`- ${fmt(totales.credito)}`} negative />
+          )}
+          <ResultRow label="Gasto nafta"           value={`- ${fmt(totales.nafta)}`} negative />
+          <ResultRow label="Ganancia antes de impuestos" value={fmt(totales.ganancia)} big />
+        </Card>
       )}
+
+      <Card className="p-4">
+        <h3 className="text-base font-bold text-slate-700 mb-3">🧾 Gastos mensuales</h3>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">DGI ($)</label>
+            <input type="number" inputMode="decimal" min="0" placeholder="0"
+              value={dgi} onChange={(e) => handleDgi(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">BPS ($)</label>
+            <input type="number" inputMode="decimal" min="0" placeholder="0"
+              value={bps} onChange={(e) => handleBps(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+        </div>
+        {(dgiVal > 0 || bpsVal > 0) && (
+          <div className="text-xs text-slate-400 text-right mb-1">
+            Total descontado: {fmt(dgiVal + bpsVal)}
+          </div>
+        )}
+        {del_mes.length > 0 && (
+          <div className="flex justify-between items-center pt-3 border-t border-slate-200">
+            <span className="font-bold text-slate-800 text-base">Ganancia final del mes</span>
+            <span className={`font-extrabold text-2xl tabular-nums ${gananciaFinalConImpuestos >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+              {fmt(gananciaFinalConImpuestos)}
+            </span>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
